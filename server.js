@@ -9,9 +9,21 @@ var express =           require('express')
     , cookieSession =   require('cookie-session')
     , session =         require('express-session')
     , csrf =            require('csurf')
-    , User =            require('./server/models/User.js');
+    , User =            require('./server/models/User.js')
+    , mongoose =        require('mongoose');
 
 var app = module.exports = express();
+
+var db_url = process.env.FD_MONGODB_URI || 'mongodb://localhost:27017/fndrDB';
+mongoose.connect(db_url, function(err) {
+  console.log('connected to database: ' + db_url);
+});
+
+var db = mongoose.connection;
+db.on('error', console.error.bind(console, 'connection error:'));
+db.once('open', function callback() {
+    console.log('Connected to Fndr database');
+});
 
 app.set('views', __dirname + '/client/views');
 app.set('view engine', 'jade');

@@ -7,7 +7,12 @@ var User
     , GoogleStrategy = require('passport-google').Strategy
     , LinkedInStrategy = require('passport-linkedin').Strategy
     , check =           require('validator').check
-    , userRoles =       require('../../client/js/routingConfig').userRoles;
+    , userRoles =       require('../../client/js/routingConfig').userRoles
+    , schemaModels =    require('./schemaModels.js');
+
+var UserM = schemaModels.User;
+console.log(schemaModels.User);
+console.log('alallalaala================');
 
 var users = [
     {
@@ -29,18 +34,41 @@ module.exports = {
         if(this.findByUsername(username) !== undefined)  return callback("UserAlreadyExists");
 
         // Clean up when 500 users reached
-        if(users.length > 500) {
-            users = users.slice(0, 2);
-        }
-
         var user = {
             id:         _.max(users, function(user) { return user.id; }).id + 1,
             username:   username,
             password:   password,
             role:       role
         };
-        users.push(user);
-        callback(null, user);
+        //users.push(user);
+        var newUser = new UserM(user);
+        newUser.save(function(error, doc){
+          console.log('error: ' + error);
+          console.log('new user: ' + doc);
+          if (error) {
+            callback(error);
+          } else {
+            callback(null, doc);
+          }
+        });
+        console.log("created new user: " + newUser);
+    },
+
+    findOrCreateLinkedinUser: function(profile, done) {
+      var user = {
+          linkedinId: profile.id
+      };
+      var newUser = new UserM(user);
+      newUser.save(function(error, doc){
+        console.log('error: ' + error);
+        console.log('new user: ' + doc);
+        if (error) {
+          done(error);
+        } else {
+          done(null, doc);
+        }
+      });
+      console.log("created new user: " + newUser);
     },
 
     findOrCreateOauthUser: function(provider, providerId) {
@@ -157,13 +185,14 @@ module.exports = {
             callbackURL: process.env.FD_LINKED_IN_CALLBACK_URL || "http://localhost:9000/auth/linkedin/callback"
           },
            function(token, tokenSecret, profile, done) {
-            var user = module.exports.findOrCreateOauthUser('linkedin', profile.id);
-            done(null,user);
+            console.log("profile :", profile);
+            var user = module.exports.findOrCreateLinkedinUser(profile, done);
           }
         );
     },
     serializeUser: function(user, done) {
-        done(null, user.id);
+        console.log(user);
+        done(null, user._id);
     },
 
     deserializeUser: function(id, done) {

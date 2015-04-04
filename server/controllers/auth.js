@@ -11,6 +11,7 @@ module.exports = {
         }
 
         User.addUser(req.body.username, req.body.password, req.body.role, function(err, user) {
+            console.log("errror: " + err);
             if(err === 'UserAlreadyExists') return res.send(403, "User already exists");
             else if(err)                    return res.send(500);
 
