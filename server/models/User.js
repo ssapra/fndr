@@ -11,8 +11,6 @@ var User
     , schemaModels =    require('./schemaModels.js');
 
 var UserM = schemaModels.User;
-console.log(schemaModels.User);
-console.log('alallalaala================');
 
 var users = [
     {
@@ -54,21 +52,38 @@ module.exports = {
         console.log("created new user: " + newUser);
     },
 
-    findOrCreateLinkedinUser: function(profile, done) {
-      var user = {
-          linkedinId: profile.id
-      };
-      var newUser = new UserM(user);
-      newUser.save(function(error, doc){
-        console.log('error: ' + error);
-        console.log('new user: ' + doc);
-        if (error) {
-          done(error);
-        } else {
-          done(null, doc);
-        }
-      });
-      console.log("created new user: " + newUser);
+    findOrCreateLinkedinUser: function(token, tokenSecret, profile, done) {
+      //First try to find the user, if can't find, create new.
+        UserM
+            .findOne({linkedinId: profile.id})
+            .exec(function (err, doc){
+                // all exception need to be taken care off
+                if (err) return done(err);
+                if (!doc) return createNewUser(profile, done);
+                return done(null, doc);
+            });
+        console.log('token is: ', token);
+        console.log('token secret is: ', tokenSecret);
+
+        function createNewUser(profile, done){
+            var user = {
+                linkedinId: profile.id,
+                displayName: profile.displayName,
+                profile: profile,
+                role: userRoles.user,
+                provider: 'linkedIn'
+            };
+            var newUser = new UserM(user);
+            return newUser.save(function(error, doc){
+                console.log('error: ' + error);
+                console.log('new user: ' + doc);
+                if (error) {
+                    done(error);
+                } else {
+                    done(null, doc);
+                }
+            });
+        };
     },
 
     findOrCreateOauthUser: function(provider, providerId) {
@@ -186,19 +201,17 @@ module.exports = {
           },
            function(token, tokenSecret, profile, done) {
             console.log("profile :", profile);
-            var user = module.exports.findOrCreateLinkedinUser(profile, done);
+            module.exports.findOrCreateLinkedinUser(token, tokenSecret, profile, done);
           }
         );
     },
     serializeUser: function(user, done) {
+        console.log('serialize user');
         console.log(user);
-        done(null, user._id);
+        done(null, user);
     },
 
     deserializeUser: function(id, done) {
-        var user = module.exports.findById(id);
-
-        if(user)    { done(null, user); }
-        else        { done(null, false); }
+        UserM.findById(id).select('linedinId displayName role').exec(done);
     }
 };

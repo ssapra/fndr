@@ -100,16 +100,16 @@ var routes = [
 
     // All other get requests should be handled by AngularJS's client-side routing system
     {
-        path: '/*',
+        path: '*',
         httpMethod: 'GET',
         middleware: [function(req, res) {
-            var role = userRoles.public, username = '';
+            var role = userRoles.public, id = '';
             if(req.user) {
                 role = req.user.role;
-                username = req.user.username;
+                id = req.user._id;
             }
             res.cookie('user', JSON.stringify({
-                'username': username,
+                'id': id,
                 'role': role
             }));
             res.render('index');
@@ -141,7 +141,7 @@ module.exports = function(app) {
                 break;
         }
     });
-}
+};
 
 function ensureAuthorized(req, res, next) {
     var role;
